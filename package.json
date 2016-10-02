@@ -1,0 +1,25 @@
+{
+  "name": "twitter_app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "dependencies": {
+    "express": "^4.14.0",
+    "moment": "^2.15.1",
+    "pug": "^2.0.0-beta6",
+    "twitter": "^1.4.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/judgejab/twitterApp.git"
+  },
+  "author": "Matt Cleary",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/judgejab/twitterApp/issues"
+  },
+  "homepage": "https://github.com/judgejab/twitterApp#readme"
+}
