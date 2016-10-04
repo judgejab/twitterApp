@@ -22,18 +22,14 @@ app.set('views', __dirname + '/templates');
 //Set up style sheets
 app.use('/static', express.static(__dirname + '/public'));
 
-// set up server on Port 3000
-app.listen(3000, function() {
-    console.log("The frontend server is running on port 3000!");
-});
 
 //Log whether 
-    var error = function (err, response, body) {
-        console.log('ERROR [%s]', err);
-    };
-    var success = function (data) {
-        console.log('Data [%s]', data);
-    };
+var error = function (err, response, body) {
+    console.log('ERROR [%s]', err);
+};
+var success = function (data) {
+    console.log('Data [%s]', data);
+};
 
 
 //Access keys to access twitter account
@@ -44,115 +40,209 @@ var config = {
     "access_token_secret": ""
 };
 
+
 //instantiate twitter client
 var client = new Twitter(config);
 
-client.get('users/show', {screen_name: 'theclearytheory'}, function(error, data, response){
-    if (!error) {
 
-        //Variables Used for me and my tweet section
-        var profileImage = data.profile_image_url;
-        var myName = data.name;
-        var screenName = data.screen_name;
-        var followerCount= data.followers_count;
-        var banner = data.profile_banner_url;
-
-    }
-
-    client.get('statuses/user_timeline', {screen_name: 'theclearytheory', count: '5'}, function(error, tweets, response) {
+//get my profile information
+function userInfo(req, res, next){
+    client.get('users/show', {screen_name: 'theclearytheory'}, function(error, data, response){
+        if(error){ 
+            console.log(error);
+            return next(error);
+        }
         if (!error) {
+
+            if(!req.renderObject) {
+                req.renderObject = {};
+            }
+
+            //Variables Used for me and my tweet section
+            req.renderObject.profileImage = data.profile_image_url;
+            req.renderObject.myName = data.name;
+            req.renderObject.screenName = data.screen_name;
+            req.renderObject.followerCount = data.followers_count;
+            req.renderObject.banner = data.profile_banner_url;
+
+            next();
+        }    
+    });
+}
+
+
+//Get 5 last tweets
+function timeLine(req, res, next){
+    client.get('statuses/user_timeline', {screen_name: 'theclearytheory', count: '5'}, function(error, tweets, response) {
+         if(error){ 
+            console.log(error);
+            return next(error);
+        }
+
+        if (!error) {
+
+            if(!req.renderObject) {
+                req.renderObject = {};
+            }
 
             var tweetContent = [];
             var dateTweeted = [];
             var noOfRetweets = [];
             var noOfLikes = [];
 
-
             for(var i = 0; i < tweets.length; i++){
-            tweetContent.push(tweets[i].text);
-            dateTweeted.push(moment(tweets[i].created_at).fromNow());
-            noOfRetweets.push(tweets[i].retweet_count);
-            noOfLikes.push(tweets[i].favorite_count);
+                tweetContent.push(tweets[i].text);
+                dateTweeted.push(moment(tweets[i].created_at, 'ddd MMM DD HH:mm:ss Z YYYY').fromNow());
+                noOfRetweets.push(tweets[i].retweet_count);
+                noOfLikes.push(tweets[i].favorite_count);
             }
 
-            console.log(dateTweeted);
+            req.renderObject.tweetContent = tweetContent;
+            req.renderObject.dateTweeted = dateTweeted;
+            req.renderObject.noOfRetweets = noOfRetweets;
+            req.renderObject.noOfLikes = noOfLikes;
+
+            next();
+        }     
+    });
+}      
+
+
+//Get Friend info
+function friends(req, res, next){
+    client.get('friends/list', {screen_name: 'theclearytheory', count: '5'}, function(error, friends, response){
+         if(error){ 
+            console.log(error);
+            return next(error);
         }
 
-        client.get('friends/list', {screen_name: 'theclearytheory', count: '5'}, function(error, friends, response){
-            if(!error){
+        if(!error){
 
-                //Variables used for last 5 people followed
-                var profileImageFriends = [];
-                var realName = [];
-                var screenNameFriends = [];
-
-                for(var i = 0; i < friends.users.length; i++){
-                    profileImageFriends.push(friends.users[i].profile_image_url);
-                    realName.push(friends.users[i].name);
-                    screenNameFriends.push(friends.users[i].screen_name);
-                }
+            if(!req.renderObject) {
+                req.renderObject = {};
             }
 
-            client.get('direct_messages', {screen_name: 'theclearytheory', count: '3'}, function(error, messages, response){
-                if(!error){
-                    //Variables used for direct messages
-                    var messagePersonName = [];
-                    var profileImageMessage = [];
-                    var messageBody = [];
-                    var privateMessageTime = [];
+            //Variables used for last 5 people followed
+            var profileImageFriends = [];
+            var realName = [];
+            var screenNameFriends = [];
 
-                    for(var i=0; i < messages.length; i++){
-                        messagePersonName.push(messages[i].sender_screen_name);
-                        profileImageMessage.push(messages[i].sender.profile_image_url);
-                        messageBody.push(messages[i].text);
-                        privateMessageTime.push(moment(messages[i].created_at).fromNow());
-                    }
-                } else {
-                    console.log(error)
-                }
+            for(var i = 0; i < friends.users.length; i++){
+                profileImageFriends.push(friends.users[i].profile_image_url);
+                realName.push(friends.users[i].name);
+                screenNameFriends.push(friends.users[i].screen_name);
+            }
 
-                client.get('direct_messages/sent', {screen_name: 'theclearytheory', count: '2'}, function(error, messages, response){
-                if(!error){
-                    //Variables for my sent messages
-                    var myOwnSentMessages = [];
-                    var timeISentMessage = [];
+            req.renderObject.profileImageFriends = profileImageFriends;
+            req.renderObject.realName = realName;
+            req.renderObject.screenNameFriends = screenNameFriends;
 
-                    for(var i=0; i < messages.length; i++){
-                        myOwnSentMessages.push(messages[i].text);
-                        timeISentMessage.push(moment(messages[i].created_at).fromNow());
-                    }
-                } else {
-                    console.log(error)
-                }
+            next();
+        }
+    });
+}
 
-                    //Tell app to render template
-                    app.get('/', function(req, res){
-                        res.render('index', {
-                            myName: myName,
-                            banner: banner,
-                            profileImage: profileImage,
-                            screenName: screenName,
-                            followerCount: followerCount,
-                            dateTweeted: dateTweeted,
-                            tweetContent: tweetContent,
-                            noOfRetweets: noOfRetweets,
-                            noOfLikes: noOfLikes,
-                            profileImageFriends: profileImageFriends,
-                            realName: realName,
-                            screenNameFriends: screenNameFriends,
-                            profileImageMessage: profileImageMessage,
-                            messageBody: messageBody,
-                            privateMessageTime: privateMessageTime,
-                            messagePersonName: messagePersonName,
-                            myOwnSentMessages: myOwnSentMessages,
-                            timeISentMessage: timeISentMessage
-                        });
-                    }) 
-                }) 
-            })        
-        }) 
-    });      
-})
+
+//Get messages sent TO me
+function receivedMessages(req, res, next){
+    client.get('direct_messages', {screen_name: 'theclearytheory', count: '3'}, function(error, messages, response){
+        if(error){ 
+            console.log(error);
+            return next(error);
+        }
+
+        if(!error){
+
+            if(!req.renderObject) {
+                req.renderObject = {};
+            }
+
+            var messagePersonName = [];
+            var profileImageMessage = [];
+            var messageBody = [];
+            var privateMessageTime = [];
+
+            for(var i=0; i < messages.length; i++){
+                messagePersonName.push(messages[i].sender_screen_name);
+                profileImageMessage.push(messages[i].sender.profile_image_url);
+                messageBody.push(messages[i].text);
+                privateMessageTime.push(moment(messages[i].created_at, 'ddd MMM DD HH:mm:ss Z YYYY').fromNow());
+            }
+
+            req.renderObject.messagePersonName = messagePersonName;
+            req.renderObject.profileImageMessage = profileImageMessage;
+            req.renderObject.messageBody = messageBody;
+            req.renderObject.privateMessageTime = privateMessageTime;
+
+            next();
+        } 
+    }); 
+}       
+
+
+//Get messages I've sent
+function sentMessages(req, res, next){
+    client.get('direct_messages/sent', {screen_name: 'theclearytheory', count: '2'}, function(error, messages, response){
+         if(error){ 
+            console.log(error);
+            return next(error);
+        }
+
+        if(!error){
+
+            if(!req.renderObject) {
+                req.renderObject = {};
+            }
+
+            var myOwnSentMessages = [];
+            var timeISentMessage = [];
+
+            for(var i=0; i < messages.length; i++){
+                myOwnSentMessages.push(messages[i].text);
+                timeISentMessage.push(moment(messages[i].created_at, 'ddd MMM DD HH:mm:ss Z YYYY').fromNow());
+            }
+
+            req.renderObject.myOwnSentMessages = myOwnSentMessages;
+            req.renderObject.timeISentMessage = timeISentMessage;
+
+            next();
+        } 
+    });
+} 
+
+
+//Tell app to render template
+function render(req,res,next){
+    if(error){ 
+        console.log(error);
+        return next(error);
+    }
+    if(!error){
+        res.render('index', req.renderObject);
+    }
+}
+
+  
+app.get('/', userInfo, timeLine, friends, receivedMessages, sentMessages, render);
+
+
+app.use(function(err, req, res, next) {
+    if(err.status == 500) {
+      // still valid
+      res.json({"error": "Server error occured"});
+    }
+
+    res.send(err);
+});
+
+
+// set up server on Port 3000
+app.listen(3000, function() {
+    console.log("The frontend server is running on port 3000!");
+});
+
+
+
 
 
 
