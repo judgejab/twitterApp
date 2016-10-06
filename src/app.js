@@ -13,6 +13,9 @@ var Twitter = require('twitter');
 //Require moment for timestamps
 var moment = require('moment');
 
+//Require config keys
+var config = require('./config.json');
+
 //Set view engine to serve middleware
 app.set('view engine', 'pug');
 
@@ -24,16 +27,16 @@ app.use('/static', express.static(__dirname + '/public'));
 
 
 //Access keys to access twitter account
-var config = {
-	"consumer_key": "",
-	"consumer_secret": "",
-	"access_token_key": "",
-	"access_token_secret": ""
+var configKeys  = {
+	consumer_key: config.consumer_key,
+	consumer_secret: config.consumer_secret,
+	access_token_key: config.access_token_key,
+	access_token_secret: config.access_token_secret
 };
 
 
 //instantiate twitter client
-var client = new Twitter(config);
+var client = new Twitter(configKeys);
 
 //get my profile information
 function userInfo(req, res, next){
